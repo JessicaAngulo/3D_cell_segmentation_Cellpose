@@ -5,8 +5,6 @@ Created on Mon May  5 18:15:19 2025
 
 @author: Jessica Angulo Capel
 """
-import tkinter as tk
-from tkinter import filedialog
 import tifffile
 import numpy as np
 from cellpose import models
@@ -14,6 +12,8 @@ from scipy.ndimage import zoom
 from skimage.measure import regionprops, label
 from scipy.spatial.distance import cdist
 from skimage.segmentation import relabel_sequential
+from google.colab import files
+import io
 
 
 class Segmentator():
@@ -36,22 +36,19 @@ class Segmentator():
         self.use_gpu = use_gpu
 
         # Load the model; use 'cyto' or train a custom model if needed
-        self.model = models.Cellpose(
+        self.model = models.CellposeModel(
             gpu=self.use_gpu,
             model_type=self.model_type)
         
         
     def load_images(self):
-        root = tk.Tk()
-        root.withdraw()
-        
         # Ask user to select two TIFF files
-        cyto_path = filedialog.askopenfilename(title="Select cytoplasmic marker TIFF file", filetypes=[("TIFF files", "*.tif *.tiff")])
-        auto_path = filedialog.askopenfilename(title="Select autofluorescence TIFF file", filetypes=[("TIFF files", "*.tif *.tiff")])
-        
+        uploaded = files.upload()
+        # Load them into numpy arrays (preserves Z dimension)
+        filenames = list(uploaded.keys())        
         # Load the two TIFF stacks
-        cyto = tifffile.imread(cyto_path)  # Shape: [Z, Y, X]
-        auto = tifffile.imread(auto_path)  # Shape: [Z, Y, X]
+        cyto = tiff.imread(io.BytesIO(uploaded[filenames[0]]))
+        auto = tiff.imread(io.BytesIO(uploaded[filenames[1]])) 
         
         if self.skip_half:
             cyto_half = cyto[::2]  # skip every second slice
@@ -79,7 +76,7 @@ class Segmentator():
         
         for z in range(image.shape[0]):
             img_slice = image[z]  # [Y, X, 2]
-            masks, _, _, _ = self.model.eval(
+            masks, _, _ = self.model.eval(
                 img_slice,
                 channels=[0, 1],
                 do_3D=False,
@@ -140,7 +137,7 @@ class Segmentator():
         
     def segmentate_3D(self, image: np.ndarray):
         # Run segmentation
-        masks_3d, _, _, _ = self.model.eval(
+        masks_3d, _, _ = self.model.eval(
             image,
             channels=[0, 1],  # channel 0 = to segment, 1 = additional
             do_3D=True,
