@@ -45,10 +45,10 @@ class Segmentator():
         # Ask user to select two TIFF files
         uploaded = files.upload()
         # Load them into numpy arrays (preserves Z dimension)
-        filenames = list(uploaded.keys())        
+        filenames = list(uploaded.keys())
         # Load the two TIFF stacks
-        cyto = tiff.imread(io.BytesIO(uploaded[filenames[0]]))
-        auto = tiff.imread(io.BytesIO(uploaded[filenames[1]])) 
+        cyto = tifffile.imread(io.BytesIO(uploaded[filenames[0]]))
+        auto = tifffile.imread(io.BytesIO(uploaded[filenames[1]])) 
         
         if self.skip_half:
             cyto_half = cyto[::2]  # skip every second slice
